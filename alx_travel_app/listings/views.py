@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 from .models import Listing, Booking
 from .serializers import ListingSerializer, BookingSerializer
+from .tasks import send_booking_confirmation_email
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
@@ -82,6 +83,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         serializer.save(
             guest=self.request.user,
             total_price=total_price
+        )
+
+        # Send confirmation email
+        send_booking_confirmation_email.delay(
+            booking_id=booking.id,
+            user_email=self.request.user.email,
+            listing_title=listing.title
         )
 
     def get_queryset(self):
